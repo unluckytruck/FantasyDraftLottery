@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantasy Draft Lottery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #07070f;
+    --bg2: #0e0e1c;
+    --bg3: #14142a;
+    --border: #1e1e3a;
+    --text: #e8e8f0;
+    --text-dim: #6668a0;
+    --gold: #f0b429;
+    --red: #ef4444;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SETUP SCREEN ── */
+  #setup-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .setup-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    width: 100%;
+    max-width: 700px;
+    box-shadow: 0 0 80px rgba(100,80,255,0.08);
+  }
+
+  .setup-box h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .setup-box p.subtitle {
+    color: var(--text-dim);
+    margin-bottom: 36px;
+    font-size: 0.9rem;
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .form-row label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    min-width: 160px;
+  }
+
+  .form-row input[type="number"] {
+    width: 100px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row input[type="number"]:focus { border-color: #7c5cfc; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding: 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .toggle-row > div:first-child { flex: 1; }
+  .toggle-row label { font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+  .toggle-row small { font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 2px; }
+
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: #7c5cfc; }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  #team-rows { margin-bottom: 28px; }
+
+  .team-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+
+  .team-row .rank-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .team-row input[type="text"] {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 4px 6px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .team-row input[type="text"]:focus { border-bottom-color: #7c5cfc; }
+
+  .color-swatches {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .swatch {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .swatch:hover { transform: scale(1.2); }
+  .swatch.selected { border-color: white; transform: scale(1.2); }
+
+  .rank-badge-small {
+    font-size: 0.7rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #7c5cfc, #5b8af7);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 32px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(124,92,252,0.3);
+    width: 100%;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 32px rgba(124,92,252,0.5); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  /* ── MAIN LOTTERY LAYOUT ── */
+  #lottery-screen { display: none; height: 100vh; overflow: hidden; }
+
+  .lottery-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+  }
+
+  /* Header */
+  .lottery-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .lottery-header h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+  }
+
+  .phase-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .btn-sm {
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-sm:hover { border-color: #7c5cfc; color: var(--text); }
+
+  /* Sidebars */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sidebar.right { border-right: none; border-left: 1px solid var(--border); }
+
+  .sidebar-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  /* Team Card */
+  .team-card {
+    border-radius: 8px;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+    transition: opacity 0.6s, filter 0.6s, transform 0.4s;
+  }
+
+  .team-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--team-color, #7c5cfc);
+  }
+
+  .team-card-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--team-color, #7c5cfc) 12%, var(--bg2)), var(--bg2));
+    z-index: 0;
+  }
+
+  .team-card-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .tc-top {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 5px;
+  }
+
+  .tc-pick {
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--team-color, #7c5cfc);
+    background: color-mix(in srgb, var(--team-color, #7c5cfc) 15%, transparent);
+    border-radius: 4px;
+    padding: 2px 5px;
+    white-space: nowrap;
+    min-width: 40px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .tc-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+
+  .tc-status {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .tc-status.assigned { border-color: #22c55e44; color: #22c55e; }
+  .tc-status.winner1 { border-color: var(--gold); color: var(--gold); }
+  .tc-status.winner2 { border-color: #60a5fa; color: #60a5fa; }
+
+  .tc-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .tc-combos { font-size: 0.67rem; color: var(--text-dim); }
+  .tc-odds {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--team-color, #7c5cfc);
+    transition: color 0.3s;
+  }
+
+  /* Clickable in assign phase */
+  .team-card.clickable { cursor: pointer; }
+  .team-card.clickable:hover { border-color: color-mix(in srgb, var(--team-color, #7c5cfc) 60%, transparent); }
+
+  /* Eliminated (won draw 1) */
+  .team-card.eliminated {
+    opacity: 0.35;
+    filter: grayscale(0.8) brightness(0.5);
+  }
+
+  /* Flicker animation */
+  @keyframes flicker {
+    0%   { filter: brightness(1); opacity: 1; }
+    8%   { filter: brightness(0.3); opacity: 0.6; }
+    15%  { filter: brightness(1.2); opacity: 1; }
+    22%  { filter: brightness(0.2); opacity: 0.4; }
+    30%  { filter: brightness(1); opacity: 1; }
+    38%  { filter: brightness(0.4); opacity: 0.7; }
+    44%  { filter: brightness(1.1); opacity: 1; }
+    52%  { filter: brightness(0.1); opacity: 0.3; }
+    58%  { filter: brightness(0.8); opacity: 0.9; }
+    65%  { filter: brightness(0.2); opacity: 0.4; }
+    72%  { filter: brightness(0.6); opacity: 0.8; }
+    80%  { filter: brightness(0.1); opacity: 0.2; }
+    88%  { filter: brightness(0.3); opacity: 0.5; }
+    94%  { filter: brightness(0.15); opacity: 0.3; }
+    100% { filter: brightness(0.15) grayscale(0.8); opacity: 0.35; }
+  }
+
+  .team-card.flickering {
+    animation: flicker 5s ease-out forwards;
+  }
+
+  /* Center panel */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* Drawn balls tray */
+  .drawn-tray {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    min-height: 80px;
+    width: 100%;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .drawn-slot {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 2px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-weight: 600;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  .drawn-ball {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffffff, #d1d5db);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #111;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 -2px 6px rgba(0,0,0,0.2);
+    animation: ballPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes ballPop {
+    0%   { transform: scale(0.3); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Canvas */
+  #ball-canvas {
+    flex: 1;
+    display: block;
+    width: 100%;
+    cursor: default;
+  }
+
+  /* Center action area */
+  .center-actions {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-action {
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 14px 36px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .btn-draw {
+    background: linear-gradient(135deg, #7c5cfc, #5b8af7);
+    color: white;
+    box-shadow: 0 4px 20px rgba(124,92,252,0.35);
+  }
+  .btn-draw:hover:not(:disabled) { box-shadow: 0 4px 32px rgba(124,92,252,0.55); transform: translateY(-1px); }
+  .btn-draw:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-start {
+    background: linear-gradient(135deg, var(--gold), #f97316);
+    color: #111;
+    box-shadow: 0 4px 20px rgba(240,180,41,0.3);
+  }
+  .btn-start:hover:not(:disabled) { box-shadow: 0 4px 32px rgba(240,180,41,0.5); transform: translateY(-1px); }
+  .btn-start:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .invalid-banner {
+    background: var(--red);
+    color: white;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 8px 24px;
+    border-radius: 8px;
+    animation: flashIn 0.2s ease;
+    letter-spacing: 0.04em;
+  }
+
+  @keyframes flashIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── MODAL (assign phase) ── */
+  #modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    display: none;
+  }
+
+  #modal-overlay.open { display: flex; }
+
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(0,0,0,0.6);
+    position: relative;
+  }
+
+  .modal-team-color-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modal-box h3 {
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .modal-box p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+
+  /* Mini ball shuffle area */
+  .mini-balls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    min-height: 64px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .mini-ball {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffffff, #d1d5db);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #111;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    transition: transform 0.15s;
+  }
+
+  .modal-result {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .modal-result strong { color: var(--text); }
+
+  /* ── REVEAL OVERLAY ── */
+  #reveal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    flex-direction: column;
+    text-align: center;
+    padding: 40px;
+  }
+
+  #reveal-overlay.open { display: flex; }
+
+  #confetti-canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .reveal-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .reveal-pick-label {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .reveal-team-name {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 16px;
+    animation: fadeUp 0.5s 0.15s both ease;
+    text-shadow: 0 0 60px currentColor;
+  }
+
+  .reveal-pick-num {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    animation: fadeUp 0.5s 0.3s both ease;
+    opacity: 0.8;
+  }
+
+  @keyframes fadeUp {
+    0%   { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .reveal-continue-btn {
+    margin-top: 40px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 12px 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+    animation: fadeUp 0.5s 0.6s both ease;
+  }
+  .reveal-continue-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.35); }
+
+  /* ── FINAL SCREEN ── */
+  #final-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(6px);
+    z-index: 150;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 40px 20px 60px;
+  }
+  #final-overlay.open { display: flex; }
+
+  .final-inner {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .final-title {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--gold), #f97316);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .final-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: -12px;
+    animation: fadeUp 0.5s 0.1s ease both;
+  }
+
+  .final-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    animation: fadeUp 0.5s 0.2s ease both;
+  }
+
+  .final-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .final-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background: var(--fc-color, transparent);
+  }
+
+  .final-card.gold-winner {
+    border-color: var(--gold);
+    box-shadow: 0 0 18px rgba(240,180,41,0.25);
+  }
+  .final-card.gold-winner::before { opacity: 0.12; background: var(--gold); }
+
+  .final-card.silver-winner {
+    border-color: #a8b0c0;
+    box-shadow: 0 0 14px rgba(168,176,192,0.2);
+  }
+  .final-card.silver-winner::before { opacity: 0.1; background: #a8b0c0; }
+
+  .fc-pick-num {
+    font-size: 1.5rem;
+    font-weight: 900;
+    width: 44px;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--text-dim);
+  }
+  .final-card.gold-winner .fc-pick-num { color: var(--gold); }
+  .final-card.silver-winner .fc-pick-num { color: #a8b0c0; }
+
+  .fc-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--fc-color, #888);
+  }
+
+  .fc-name {
+    font-size: 1rem;
+    font-weight: 800;
+    flex: 1;
+    color: var(--fc-color, var(--text));
+  }
+
+  .fc-move {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .fc-move .moved { color: var(--gold); }
+
+  .fc-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .fc-badge.gold { background: var(--gold); color: #1a0f00; }
+  .fc-badge.silver { background: #a8b0c0; color: #1a1a2e; }
+
+  .final-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    animation: fadeUp 0.5s 0.3s ease both;
+  }
+
+  /* Scrollbar */
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Assign phase instructions */
+  .assign-instruction {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* Combo grid in modal (#4) */
+  .combo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 10px 0 10px;
+    width: 100%;
+  }
+  .combo-cell {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+  .combo-more {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  /* Slot-machine cycling ball */
+  @keyframes cyclePulse {
+    from { transform: scale(0.92); }
+    to   { transform: scale(1.08); }
+  }
+  .cycling-ball {
+    border: 2px solid var(--gold) !important;
+    box-shadow: 0 0 18px var(--gold), 0 4px 16px rgba(0,0,0,0.5) !important;
+    animation: cyclePulse 0.22s ease-in-out infinite alternate;
+    color: var(--gold) !important;
+    background: radial-gradient(circle at 35% 35%, #2a1a00, #1a0f00) !important;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     SETUP SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <h1>Fantasy Draft Lottery</h1>
+    <p class="subtitle">Host setup — configure before the audience connects.</p>
+
+    <div class="form-row">
+      <label for="num-teams">Number of teams</label>
+      <input type="number" id="num-teams" min="2" max="16" value="16">
+      <span style="font-size:0.8rem;color:var(--text-dim)">teams in the draw</span>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <label for="jump-toggle">10-Spot Jump Max</label>
+        <small>Winner can jump at most 10 positions (mirrors real NHL rule)</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="jump-toggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div id="team-rows"></div>
+
+    <button class="btn-primary" id="lock-setup-btn">Lock In Setup &amp; Start Assignment</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     LOTTERY SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="lottery-screen">
+  <div class="lottery-layout">
+
+    <!-- Header -->
+    <header class="lottery-header">
+      <h2>⚡ Fantasy Draft Lottery</h2>
+      <span class="phase-badge" id="phase-badge">Assignment Phase</span>
+      <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+        <span id="jump-indicator" style="font-size:0.72rem;color:var(--text-dim);"></span>
+        <button class="btn-sm" id="reset-btn">Start Over</button>
+      </div>
+    </header>
+
+    <!-- Left Sidebar -->
+    <div class="sidebar" id="sidebar-left">
+      <div class="sidebar-label">Worst → Mid</div>
+    </div>
+
+    <!-- Center Panel -->
+    <div class="center-panel">
+      <div class="drawn-tray" id="drawn-tray">
+        <div class="drawn-slot">1</div>
+        <div class="drawn-slot">2</div>
+        <div class="drawn-slot">3</div>
+        <div class="drawn-slot">4</div>
+      </div>
+      <canvas id="ball-canvas"></canvas>
+      <div class="center-actions" id="center-actions">
+        <div id="action-content"></div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="sidebar right" id="sidebar-right">
+      <div class="sidebar-label">Mid → Best</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-team-color-bar" id="modal-color-bar"></div>
+    <h3 id="modal-team-name"></h3>
+    <p id="modal-team-desc"></p>
+    <div class="combo-grid" id="combo-grid-area"></div>
+    <div class="combo-more" id="combo-more"></div>
+    <div class="modal-result" id="modal-result"></div>
+    <button class="btn-action btn-draw" id="modal-draw-btn" onclick="assignTeamNumbers()">Draw Numbers</button>
+    <button class="btn-action btn-start" id="modal-close-btn" style="display:none;margin-top:10px;" onclick="closeModal()">Done</button>
+  </div>
+</div>
+
+<!-- Reveal Overlay -->
+<div id="reveal-overlay">
+  <canvas id="confetti-canvas"></canvas>
+  <div class="reveal-content">
+    <div class="reveal-pick-label" id="reveal-pick-label">Pick 1</div>
+    <div class="reveal-team-name" id="reveal-team-name">Team Name</div>
+    <div class="reveal-pick-num" id="reveal-pick-num">Wins the 1st Overall Pick</div>
+    <button class="reveal-continue-btn" id="reveal-continue-btn">Continue →</button>
+  </div>
+</div>
+
+<!-- Final Overlay -->
+<div id="final-overlay">
+  <div class="final-inner">
+    <div class="final-title">🏆 Draft Order Confirmed</div>
+    <div class="final-subtitle">Lottery complete &mdash; format shown is original standing &rarr; final pick</div>
+    <div class="final-cards" id="final-cards"></div>
+    <div class="final-actions">
+      <button class="btn-primary" style="max-width:200px;" onclick="hardReset()">Start Over</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'fantasyLottery';
+const STORAGE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+
+// Exact combo counts from the 2026 NHL lottery table (sums to 1000)
+const NHL_COMBOS_16 = [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 5, 5];
+const NHL_WEIGHTS = [18.5, 13.5, 11.5, 9.5, 8.5, 7.5, 6.5, 6.0, 5.0, 3.5, 3.0, 2.5, 2.0, 1.5, 0.5, 0.5];
+
+function computeComboCounts(N) {
+  if (N === 16) return [...NHL_COMBOS_16];
+  const weights = NHL_WEIGHTS.slice(0, N);
+  const sum = weights.reduce((a,b) => a+b, 0);
+  const counts = weights.map(w => Math.round(w / sum * 1000));
+  const diff = 1000 - counts.reduce((a,b) => a+b, 0);
+  counts[counts.length - 1] += diff;
+  return counts;
+}
+
+const PALETTE = [
+  { name: 'Red',    hex: '#ef4444' },
+  { name: 'Orange', hex: '#f97316' },
+  { name: 'Amber',  hex: '#f59e0b' },
+  { name: 'Lime',   hex: '#84cc16' },
+  { name: 'Teal',   hex: '#14b8a6' },
+  { name: 'Cyan',   hex: '#06b6d4' },
+  { name: 'Blue',   hex: '#3b82f6' },
+  { name: 'Indigo', hex: '#6366f1' },
+  { name: 'Purple', hex: '#a855f7' },
+  { name: 'Pink',   hex: '#ec4899' },
+];
+
+const DISCARDED_COMBO = '11-12-13-14';
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let state = null;
+let ballAnimating = false;
+// state shape:
+// {
+//   phase: 'setup'|'assign'|'draw1'|'reveal1'|'draw2'|'reveal2'|'final',
+//   jumpLimit: bool,
+//   teams: [{id, name, color, standingsRank, draftPick, numCombos, baseOdds, currentOdds,
+//             eliminated, drawWinner (1|2|null), combos: [[a,b,c,d],...] }],
+//   comboMap: { "a-b-c-d": teamId },  // stored as plain object for JSON
+//   draw1WinnerId: null|id,
+//   draw2WinnerId: null|id,
+//   currentBalls: [],   // balls drawn so far this round
+//   savedAt: timestamp
+// }
+
+// ═══════════════════════════════════════════════════════════════
+// COMBO GENERATION
+// ═══════════════════════════════════════════════════════════════
+function generateAllCombos() {
+  const combos = [];
+  for (let a = 1; a <= 14; a++)
+    for (let b = a+1; b <= 14; b++)
+      for (let c = b+1; c <= 14; c++)
+        for (let d = c+1; d <= 14; d++) {
+          const key = `${a}-${b}-${c}-${d}`;
+          if (key !== DISCARDED_COMBO) combos.push([a,b,c,d]);
+        }
+  return combos; // exactly 1000
+}
+
+function comboKey(arr) {
+  return [...arr].sort((a,b) => a-b).join('-');
+}
+
+function assignCombos(teams) {
+  const N = teams.length;
+
+  // Use exact combo counts for 16 teams; otherwise scale weights proportionally
+  let counts;
+  let scaled;
+  if (N === 16) {
+    counts = [...NHL_COMBOS_16];
+    scaled = NHL_WEIGHTS.map(w => w / 100);
+  } else {
+    const rawWeights = NHL_WEIGHTS.slice(0, N);
+    const sum = rawWeights.reduce((a,b) => a+b, 0);
+    scaled = rawWeights.map(w => w / sum);
+    counts = scaled.map(w => Math.round(w * 1000));
+    const diff = 1000 - counts.reduce((a,b) => a+b, 0);
+    counts[counts.length - 1] += diff;
+  }
+
+  // Shuffle all 1000 combos and slice per team
+  const allCombos = generateAllCombos();
+  // Fisher-Yates shuffle
+  for (let i = allCombos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allCombos[i], allCombos[j]] = [allCombos[j], allCombos[i]];
+  }
+
+  const comboMap = {};
+  let offset = 0;
+  teams.forEach((team, idx) => {
+    const n = counts[idx];
+    team.combos = allCombos.slice(offset, offset + n);
+    team.numCombos = n;
+    team.baseOdds = parseFloat((scaled[idx] * 100).toFixed(1));
+    team.currentOdds = team.baseOdds;
+    team.combos.forEach(c => { comboMap[comboKey(c)] = team.id; });
+    offset += n;
+  });
+
+  return comboMap;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETUP SCREEN
+// ═══════════════════════════════════════════════════════════════
+function buildSetupRows(n) {
+  const container = document.getElementById('team-rows');
+  container.innerHTML = '';
+  for (let i = 1; i <= n; i++) {
+    const row = document.createElement('div');
+    row.className = 'team-row';
+    row.innerHTML = `
+      <span class="rank-num">${i}</span>
+      <input type="text" placeholder="Team ${i} name" value="Team ${i}" data-rank="${i}">
+      <div class="color-swatches" data-rank="${i}">
+        ${PALETTE.map((c, ci) => `<div class="swatch ${ci===i%PALETTE.length?'selected':''}" style="background:${c.hex}" data-hex="${c.hex}" data-rank="${i}" title="${c.name}"></div>`).join('')}
+      </div>
+      <span class="rank-badge-small">Pos ${i}</span>
+    `;
+    container.appendChild(row);
+  }
+
+  // Swatch click handlers
+  container.querySelectorAll('.swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      const rank = s.dataset.rank;
+      container.querySelectorAll(`.swatch[data-rank="${rank}"]`).forEach(x => x.classList.remove('selected'));
+      s.classList.add('selected');
+    });
+  });
+}
+
+document.getElementById('num-teams').addEventListener('input', function() {
+  const n = Math.max(2, Math.min(16, parseInt(this.value) || 2));
+  buildSetupRows(n);
+});
+
+document.getElementById('lock-setup-btn').addEventListener('click', () => {
+  const n = parseInt(document.getElementById('num-teams').value);
+  const jumpLimit = document.getElementById('jump-toggle').checked;
+  const rows = document.querySelectorAll('.team-row');
+
+  const teams = [];
+  rows.forEach((row, idx) => {
+    const rank = idx + 1;
+    const name = row.querySelector('input[type="text"]').value.trim() || `Team ${rank}`;
+    const selectedSwatch = row.querySelector('.swatch.selected');
+    const color = selectedSwatch ? selectedSwatch.dataset.hex : PALETTE[idx % PALETTE.length].hex;
+    teams.push({
+      id: `t${rank}`,
+      name,
+      color,
+      standingsRank: rank,
+      draftPick: rank,
+      numCombos: 0,
+      baseOdds: 0,
+      currentOdds: 0,
+      eliminated: false,
+      drawWinner: null,
+      combos: [],
+    });
+  });
+
+  // Pre-compute combo counts and build one shuffled pool for the whole lottery
+  const N = teams.length;
+  const counts = computeComboCounts(N);
+  const comboPool = generateAllCombos();
+  for (let i = comboPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [comboPool[i], comboPool[j]] = [comboPool[j], comboPool[i]];
+  }
+  // Pre-assign numCombos and baseOdds so cards can display them immediately
+  teams.forEach((team, idx) => {
+    team.numCombos = counts[idx];
+    team.baseOdds = parseFloat((counts[idx] / 10).toFixed(1));
+    team.currentOdds = team.baseOdds;
+  });
+
+  state = {
+    phase: 'assign',
+    jumpLimit,
+    teams,
+    comboMap: {},
+    comboPool,
+    comboOffset: 0,
+    draw1WinnerId: null,
+    draw2WinnerId: null,
+    currentBalls: [],
+    savedAt: Date.now(),
+  };
+
+  saveState();
+  showLotteryScreen();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════════════════════
+function saveState() {
+  if (!state) return;
+  state.savedAt = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s.comboPool) s.comboPool = [];
+    if (s.comboOffset === undefined) s.comboOffset = 0;
+    if (!s.savedAt || Date.now() - s.savedAt > STORAGE_TTL) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return s;
+  } catch { return null; }
+}
+
+function hardReset() {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOTTERY SCREEN BOOT
+// ═══════════════════════════════════════════════════════════════
+function showLotteryScreen() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('lottery-screen').style.display = 'block';
+
+  // Jump indicator
+  const ind = document.getElementById('jump-indicator');
+  ind.textContent = state.jumpLimit ? '10-spot jump limit ON' : 'No jump limit';
+
+  renderSidebars();
+  setupCanvas();
+  renderPhase();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIDEBARS
+// ═══════════════════════════════════════════════════════════════
+function renderSidebars() {
+  const N = state.teams.length;
+  const mid = Math.ceil(N / 2);
+
+  // Sort teams by their current draftPick for display
+  const sorted = [...state.teams].sort((a,b) => a.draftPick - b.draftPick);
+  const leftTeams = sorted.filter((_, i) => i < mid);
+  const rightTeams = sorted.filter((_, i) => i >= mid);
+
+  document.getElementById('sidebar-left').innerHTML = `<div class="sidebar-label">Worst → Mid</div>` + leftTeams.map(t => teamCardHTML(t)).join('');
+  document.getElementById('sidebar-right').innerHTML = `<div class="sidebar-label">Mid → Best</div>` + rightTeams.map(t => teamCardHTML(t)).join('');
+
+  // Attach click handlers in assign phase
+  if (state.phase === 'assign') {
+    document.querySelectorAll('.team-card.clickable').forEach(card => {
+      card.addEventListener('click', () => openAssignModal(card.dataset.teamId));
+    });
+  }
+}
+
+function teamCardHTML(team) {
+  const phase = state.phase;
+  const isAssigned = team.combos && team.combos.length > 0;
+  const isElim = team.eliminated && phase !== 'final';
+  const isClickable = phase === 'assign' && !isAssigned;
+
+  let statusClass = '';
+  let statusText = '';
+  if (team.drawWinner === 1) { statusClass = 'winner1'; statusText = `PICK ${team.draftPick}`; }
+  else if (team.drawWinner === 2) { statusClass = 'winner2'; statusText = `PICK ${team.draftPick}`; }
+  else if (isAssigned) { statusClass = 'assigned'; statusText = 'READY'; }
+  else { statusText = 'UNASSIGNED'; }
+
+  const oddsDisplay = (phase === 'draw1' || phase === 'draw2') ? `${team.currentOdds.toFixed(1)}%` :
+                      phase === 'final' ? '' :
+                      isAssigned ? `${team.baseOdds.toFixed(1)}%` : '–';
+  const combosDisplay = isAssigned ? `${team.numCombos} combos` : '–';
+  const pickLabel = `PICK ${team.draftPick}`;
+
+  return `<div class="team-card ${isElim ? 'eliminated' : ''} ${isClickable ? 'clickable' : ''}"
+    id="card-${team.id}"
+    data-team-id="${team.id}"
+    style="--team-color:${team.color}">
+    <div class="team-card-bg"></div>
+    <div class="team-card-content">
+      <div class="tc-top">
+        <span class="tc-pick" id="pick-${team.id}">${pickLabel}</span>
+        <span class="tc-name">${team.name}</span>
+        <span class="tc-status ${statusClass}">${statusText}</span>
+      </div>
+      <div class="tc-bottom">
+        <span class="tc-combos" id="combos-${team.id}">${combosDisplay}</span>
+        <span class="tc-odds" id="odds-${team.id}">${oddsDisplay}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateCardOdds() {
+  const inDraw = state.phase === 'draw1' || state.phase === 'draw2';
+  state.teams.forEach(team => {
+    const oddsEl   = document.getElementById(`odds-${team.id}`);
+    const combosEl = document.getElementById(`combos-${team.id}`);
+    if (oddsEl)   oddsEl.textContent   = inDraw ? `${team.currentOdds.toFixed(1)}%` : `${team.baseOdds.toFixed(1)}%`;
+    if (combosEl && inDraw && state.currentBalls.length > 0) {
+      const cur = team.currentCombos ?? team.numCombos;
+      combosEl.textContent = `${cur} combos`;
+      combosEl.style.color = cur < team.numCombos ? 'var(--text-dim)' : '';
+    } else if (combosEl && inDraw) {
+      // Reset to numCombos at start of a draw (0 balls)
+      combosEl.textContent = `${team.numCombos} combos`;
+      combosEl.style.color = '';
+    }
+  });
+}
+
+function updateCardPick(teamId) {
+  const team = state.teams.find(t => t.id === teamId);
+  if (!team) return;
+  const el = document.getElementById(`pick-${teamId}`);
+  if (el) el.textContent = `PICK ${team.draftPick}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE RENDERING
+// ═══════════════════════════════════════════════════════════════
+function renderPhase() {
+  const phaseNames = {
+    assign: 'Assignment Phase',
+    draw1: 'Draw — Pick 1',
+    reveal1: 'Reveal — Pick 1',
+    draw2: 'Draw — Pick 2',
+    reveal2: 'Reveal — Pick 2',
+    final: 'Complete',
+  };
+  document.getElementById('phase-badge').textContent = phaseNames[state.phase] || state.phase;
+
+  const actions = document.getElementById('action-content');
+
+  if (state.phase === 'assign') {
+    const allAssigned = state.teams.every(t => t.combos && t.combos.length > 0);
+    actions.innerHTML = `
+      <div style="text-align:center">
+        <div class="assign-instruction" style="margin-bottom:12px">Click a team card to draw their lottery numbers</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          ${allAssigned ? '' : `<button class="btn-action btn-sm" id="draw-all-btn" style="font-size:0.78rem;padding:6px 14px;">Draw All</button>`}
+          <button class="btn-action btn-start" id="start-draw1-btn" ${allAssigned ? '' : 'disabled'}>
+            Start Pick 1 Draw
+          </button>
+        </div>
+      </div>`;
+    if (allAssigned) {
+      document.getElementById('start-draw1-btn').addEventListener('click', startDraw1);
+    } else {
+      document.getElementById('draw-all-btn').addEventListener('click', drawAllCombos);
+    }
+    stopBalls();
+    canvas.style.display = 'none';
+  }
+
+  if (state.phase === 'draw1' || state.phase === 'draw2') {
+    canvas.style.display = 'block';
+    renderDrawActions();
+    startBalls();
+  }
+
+  updateDrawnTray();
+}
+
+function drawAllCombos() {
+  // Instantly assign combos to every unassigned team
+  state.teams.forEach(team => {
+    if (team.combos.length === 0) {
+      const n = team.numCombos;
+      team.combos = state.comboPool.slice(state.comboOffset, state.comboOffset + n);
+      team.combos.forEach(c => { state.comboMap[comboKey(c)] = team.id; });
+      state.comboOffset += n;
+    }
+  });
+  saveState();
+  renderSidebars();
+  renderPhase();
+}
+
+function renderDrawActions(banner) {
+  const actions = document.getElementById('action-content');
+  const drawNum = state.phase === 'draw1' ? 1 : 2;
+  actions.innerHTML = `
+    ${banner ? `<div class="invalid-banner">${banner}</div>` : ''}
+    <button class="btn-action btn-draw" id="draw-ball-btn" ${(state.currentBalls.length >= 4 || ballAnimating) ? 'disabled' : ''}>
+      Draw Ball (${state.currentBalls.length}/4)
+    </button>`;
+  document.getElementById('draw-ball-btn').addEventListener('click', drawBall);
+}
+
+function updateDrawnTray() {
+  if (ballAnimating) return; // don't clobber in-progress slot animation
+  const tray = document.getElementById('drawn-tray');
+  tray.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    if (i < state.currentBalls.length) {
+      const b = document.createElement('div');
+      b.className = 'drawn-ball';
+      b.textContent = state.currentBalls[i];
+      tray.appendChild(b);
+    } else {
+      const s = document.createElement('div');
+      s.className = 'drawn-slot';
+      s.textContent = i + 1;
+      tray.appendChild(s);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ASSIGN MODAL
+// ═══════════════════════════════════════════════════════════════
+let modalTeamId = null;
+let assignAnimFrame = null;
+
+function openAssignModal(teamId) {
+  modalTeamId = teamId;
+  const team = state.teams.find(t => t.id === teamId);
+  document.getElementById('modal-team-name').textContent = team.name;
+  document.getElementById('modal-team-name').style.color = team.color;
+  document.getElementById('modal-color-bar').style.background = team.color;
+  document.getElementById('modal-team-desc').textContent = `Standings position #${team.standingsRank} · Draw their lottery numbers now`;
+  document.getElementById('combo-grid-area').innerHTML = '';
+  document.getElementById('combo-more').textContent = '';
+  document.getElementById('modal-result').innerHTML = '';
+  document.getElementById('modal-draw-btn').style.display = 'inline-block';
+  document.getElementById('modal-draw-btn').disabled = false;
+  document.getElementById('modal-close-btn').style.display = 'none';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalTeamId = null;
+}
+
+function assignTeamNumbers() {
+  const team = state.teams.find(t => t.id === modalTeamId);
+
+  // Slice this team's combos from the pre-shuffled pool (Fix #1 — one team at a time)
+  if (team.combos.length === 0) {
+    const n = team.numCombos;
+    team.combos = state.comboPool.slice(state.comboOffset, state.comboOffset + n);
+    team.combos.forEach(c => { state.comboMap[comboKey(c)] = team.id; });
+    state.comboOffset += n;
+  }
+
+  document.getElementById('modal-draw-btn').style.display = 'none';
+
+  const gridArea = document.getElementById('combo-grid-area');
+  const moreEl = document.getElementById('combo-more');
+  const displayCount = Math.min(10, team.combos.length);
+  const extraCount = team.combos.length - displayCount;
+
+  // Build the grid — random numbers during shuffle, real combos at end
+  function renderGrid(random) {
+    gridArea.innerHTML = '';
+    for (let i = 0; i < displayCount; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'combo-cell';
+      const nums = random
+        ? Array.from({length:4}, () => Math.floor(Math.random() * 14) + 1)
+        : team.combos[i];
+      nums.forEach(n => {
+        const b = document.createElement('div');
+        b.className = 'mini-ball';
+        b.textContent = n;
+        cell.appendChild(b);
+      });
+      gridArea.appendChild(cell);
+    }
+  }
+
+  let shuffleCount = 0;
+  const maxShuffles = 22;
+
+  function shuffle() {
+    renderGrid(shuffleCount < maxShuffles);
+    shuffleCount++;
+    if (shuffleCount <= maxShuffles) {
+      assignAnimFrame = setTimeout(shuffle, 55);
+    } else {
+      // Landed on actual combos
+      if (extraCount > 0) moreEl.textContent = `+ ${extraCount} more combinations`;
+      const result = document.getElementById('modal-result');
+      result.innerHTML = `<strong>${team.numCombos}</strong> combinations assigned &nbsp;·&nbsp; Base odds: <strong style="color:${team.color}">${team.baseOdds.toFixed(1)}%</strong>`;
+      document.getElementById('modal-close-btn').style.display = 'inline-block';
+
+      renderSidebars();
+      saveState();
+
+      const allAssigned = state.teams.every(t => t.combos && t.combos.length > 0);
+      const actions = document.getElementById('action-content');
+      if (allAssigned) {
+        actions.innerHTML = `
+          <div style="text-align:center">
+            <button class="btn-action btn-start" id="start-draw1-btn">Start Pick 1 Draw</button>
+          </div>`;
+        document.getElementById('start-draw1-btn').addEventListener('click', startDraw1);
+      } else {
+        const remaining = state.teams.filter(t => !t.combos || t.combos.length === 0).length;
+        actions.innerHTML = `<div class="assign-instruction">${remaining} team${remaining!==1?'s':''} remaining · Click a card to draw numbers</div>`;
+      }
+    }
+  }
+  shuffle();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAW PHASE
+// ═══════════════════════════════════════════════════════════════
+function startDraw1() {
+  state.phase = 'draw1';
+  state.currentBalls = [];
+  saveState();
+  renderSidebars();
+  renderPhase();
+  computeLiveOdds();
+}
+
+function startDraw2() {
+  state.phase = 'draw2';
+  state.currentBalls = [];
+  ballAnimating = false; // safety reset
+  saveState();
+  renderSidebars();
+  renderPhase();
+  computeLiveOdds();
+}
+
+function drawBall() {
+  if (state.currentBalls.length >= 4 || ballAnimating) return;
+
+  const available = Array.from({length:14}, (_,i)=>i+1).filter(n => !state.currentBalls.includes(n));
+  const ball = available[Math.floor(Math.random() * available.length)];
+
+  // Remove from canvas immediately
+  balls = balls.filter(b => b.num !== ball);
+
+  state.currentBalls.push(ball);
+  ballAnimating = true;
+  renderDrawActions(); // disable button
+
+  // Slot-machine reveal on the tray slot
+  const slotIndex = state.currentBalls.length - 1;
+  startSlotAnimation(ball, slotIndex, () => {
+    ballAnimating = false;
+    computeLiveOdds();
+    saveState();
+    if (state.currentBalls.length === 4) {
+      setTimeout(evaluateDraw, 400);
+    } else {
+      renderDrawActions();
+    }
+  });
+}
+
+function startSlotAnimation(ball, slotIndex, onDone) {
+  const tray = document.getElementById('drawn-tray');
+  const slot = tray.children[slotIndex];
+  if (!slot) { onDone(); return; }
+
+  slot.className = 'drawn-ball cycling-ball';
+  slot.textContent = '?';
+
+  const start = Date.now();
+  const totalDuration = 1900;
+
+  function tick() {
+    const elapsed = Date.now() - start;
+    const progress = Math.min(elapsed / totalDuration, 1);
+
+    if (progress >= 1) {
+      slot.textContent = ball;
+      slot.className = 'drawn-ball';
+      onDone();
+      return;
+    }
+
+    // Cycle through random numbers, easing in on slowing
+    slot.textContent = Math.floor(Math.random() * 14) + 1;
+    const nextDelay = 35 + progress * progress * 280; // fast→slow
+    setTimeout(tick, nextDelay);
+  }
+
+  tick();
+}
+
+function evaluateDraw() {
+  const key = comboKey(state.currentBalls);
+  const drawNum = state.phase === 'draw1' ? 1 : 2;
+
+  // Check discarded
+  if (key === DISCARDED_COMBO) {
+    invalidDraw('Invalid combination — Redrawing');
+    return;
+  }
+
+  // Check if belongs to draw 1 winner (draw 2 only)
+  if (drawNum === 2 && state.draw1WinnerId) {
+    const ownerTeamId = state.comboMap[key];
+    if (ownerTeamId === state.draw1WinnerId) {
+      invalidDraw('Draw 1 winner drawn — Redrawing');
+      return;
+    }
+  }
+
+  // Valid draw — find winner
+  const ownerTeamId = state.comboMap[key];
+  if (!ownerTeamId) {
+    invalidDraw('Unknown combination — Redrawing');
+    return;
+  }
+
+  triggerReveal(ownerTeamId, drawNum);
+}
+
+function invalidDraw(message) {
+  renderDrawActions(message);
+  setTimeout(() => {
+    state.currentBalls = [];
+    updateDrawnTray();
+    saveState();
+    renderDrawActions();
+    computeLiveOdds();
+  }, 2000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE ODDS
+// ═══════════════════════════════════════════════════════════════
+function computeLiveOdds() {
+  const drawn = state.currentBalls;
+  const drawNum = state.phase === 'draw1' ? 1 : 2;
+
+  // Eligible teams for this draw (all except draw1 winner in draw2)
+  const eligibleIds = new Set(
+    state.teams
+      .filter(t => !t.eliminated)
+      .map(t => t.id)
+  );
+
+  if (drawn.length === 0) {
+    // Reset to base odds among eligible
+    const eligibleTeams = state.teams.filter(t => eligibleIds.has(t.id));
+    const totalCombos = eligibleTeams.reduce((s, t) => s + t.numCombos, 0);
+    state.teams.forEach(t => {
+      const eligible = eligibleIds.has(t.id);
+      t.currentOdds   = eligible ? (t.numCombos / totalCombos) * 100 : 0;
+      t.currentCombos = eligible ? t.numCombos : 0;
+    });
+  } else {
+    // Count combos per eligible team that contain all drawn balls
+    let totalMatching = 0;
+    const matchCounts = {};
+    state.teams.forEach(t => {
+      if (!eligibleIds.has(t.id)) { matchCounts[t.id] = 0; return; }
+      const count = t.combos.filter(c => drawn.every(b => c.includes(b))).length;
+      matchCounts[t.id] = count;
+      totalMatching += count;
+    });
+
+    state.teams.forEach(t => {
+      t.currentOdds   = totalMatching > 0 ? (matchCounts[t.id] / totalMatching) * 100 : 0;
+      t.currentCombos = matchCounts[t.id] ?? 0;
+    });
+  }
+
+  updateCardOdds();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REVEAL & CASCADE
+// ═══════════════════════════════════════════════════════════════
+function triggerReveal(winnerTeamId, drawNum) {
+  const winner = state.teams.find(t => t.id === winnerTeamId);
+
+  // Winner's current draft pick position (post-draw-1 for draw 2)
+  const K = winner.draftPick;
+  const N = drawNum;
+
+  // assignedPick = max(N, K - 10) with jump limit; without limit always = N
+  const assignedPick = state.jumpLimit ? Math.max(N, K - 10) : N;
+
+  // Cascade: all teams currently at picks [assignedPick, K-1] shift down by 1.
+  // This vacates the assignedPick slot for the winner.
+  // Includes any team (e.g. draw 1 capped winner) sitting in that range.
+  state.teams.forEach(t => {
+    if (t.id !== winnerTeamId && !t.eliminated && t.draftPick >= assignedPick && t.draftPick < K) {
+      t.draftPick += 1;
+    }
+  });
+
+  // Assign winner their pick
+  winner.draftPick = assignedPick;
+  winner.eliminated = true;
+  winner.drawWinner = drawNum;
+
+  if (drawNum === 1) {
+    state.draw1WinnerId = winnerTeamId;
+    state.phase = 'reveal1';
+  } else {
+    state.draw2WinnerId = winnerTeamId;
+    state.phase = 'reveal2';
+  }
+
+  saveState();
+
+  // Show reveal overlay
+  showRevealOverlay(winner, assignedPick, drawNum);
+}
+
+function showRevealOverlay(winner, assignedPick, drawNum) {
+  stopBalls();
+
+  const overlay = document.getElementById('reveal-overlay');
+  const label = document.getElementById('reveal-pick-label');
+  const nameEl = document.getElementById('reveal-team-name');
+  const pickNum = document.getElementById('reveal-pick-num');
+  const continueBtn = document.getElementById('reveal-continue-btn');
+
+  label.textContent = `Draw ${drawNum} Winner`;
+  nameEl.textContent = winner.name;
+  nameEl.style.color = winner.color;
+  pickNum.textContent = `Awarded Pick #${assignedPick}`;
+
+  continueBtn.textContent = drawNum === 1 ? 'Continue to Pick 2 Draw →' : 'View Final Order →';
+  continueBtn.onclick = () => {
+    overlay.classList.remove('open');
+    stopConfetti();
+    if (drawNum === 1) {
+      state.teams.forEach(t => updateCardPick(t.id));
+      // Start draw 2 immediately (re-renders sidebars, restarts balls)
+      startDraw2();
+      // Flicker the winner card 2s after overlay dismissed
+      setTimeout(() => {
+        const card = document.getElementById(`card-${winner.id}`);
+        if (card) {
+          card.classList.add('flickering');
+          setTimeout(() => { if (card) card.classList.remove('flickering'); }, 5000);
+        }
+      }, 2000);
+    } else {
+      // Draw 2: no flicker — go straight to clean final state
+      state.phase = 'final';
+      saveState();
+      showFinal();
+    }
+  };
+
+  overlay.classList.add('open');
+  startConfetti(winner.color);
+}
+
+function showFinal() {
+  document.getElementById('phase-badge').textContent = 'Complete';
+  renderSidebars();
+  document.getElementById('center-actions').innerHTML = '';
+
+  const sorted = [...state.teams].sort((a, b) => a.draftPick - b.draftPick);
+  const cardsEl = document.getElementById('final-cards');
+  cardsEl.innerHTML = '';
+
+  sorted.forEach((team, i) => {
+    const isGold   = team.id === state.draw1WinnerId;
+    const isSilver = team.id === state.draw2WinnerId;
+    const moved    = team.standingsRank !== team.draftPick;
+
+    const card = document.createElement('div');
+    card.className = 'final-card' + (isGold ? ' gold-winner' : isSilver ? ' silver-winner' : '');
+    card.style.setProperty('--fc-color', team.color);
+
+    card.innerHTML = `
+      <span class="fc-pick-num">${team.draftPick}</span>
+      <span class="fc-dot"></span>
+      <span class="fc-name">${team.name}</span>
+      <span class="fc-move">${team.standingsRank} <span class="arrow">→</span> <span class="${moved ? 'moved' : ''}">${team.draftPick}</span></span>
+      ${isGold   ? '<span class="fc-badge gold">Draw 1</span>'   : ''}
+      ${isSilver ? '<span class="fc-badge silver">Draw 2</span>' : ''}
+    `;
+
+    // Stagger fade-in
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(10px)';
+    card.style.transition = `opacity 0.3s ${i * 40}ms ease, transform 0.3s ${i * 40}ms ease`;
+    cardsEl.appendChild(card);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }));
+  });
+
+  const finalOverlay = document.getElementById('final-overlay');
+  finalOverlay.classList.add('open');
+  // Must set after display:flex kicks in — display:none elements ignore scrollTop
+  finalOverlay.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BALL PHYSICS CANVAS
+// ═══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('ball-canvas');
+const ctx = canvas.getContext('2d');
+let balls = [];
+let animId = null;
+let isRunning = false;
+
+function setupCanvas() {
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+}
+
+function resizeCanvas() {
+  const panel = canvas.parentElement;
+  const tray = document.getElementById('drawn-tray');
+  const actions = document.getElementById('center-actions');
+  canvas.width = panel.clientWidth;
+  canvas.height = panel.clientHeight - tray.offsetHeight - actions.offsetHeight;
+}
+
+function initBalls() {
+  balls = [];
+  for (let i = 1; i <= 14; i++) {
+    balls.push({
+      num: i,
+      x: 60 + Math.random() * (canvas.width - 120),
+      y: 60 + Math.random() * (canvas.height - 120),
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      r: 24,
+    });
+  }
+}
+
+function startBalls() {
+  if (isRunning) return;
+  isRunning = true;
+  initBalls();
+  animLoop();
+}
+
+function stopBalls() {
+  isRunning = false;
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function animLoop() {
+  if (!isRunning) return;
+  resizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw machine background
+  const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 20, canvas.width/2, canvas.height/2, canvas.width*0.7);
+  grad.addColorStop(0, '#14142a');
+  grad.addColorStop(1, '#07070f');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  balls.forEach(b => {
+    // Random impulse
+    b.vx += (Math.random() - 0.5) * 0.35;
+    b.vy += (Math.random() - 0.5) * 0.35;
+
+    // Speed cap
+    const spd = Math.hypot(b.vx, b.vy);
+    const maxSpd = 8;
+    if (spd > maxSpd) { b.vx = (b.vx/spd)*maxSpd; b.vy = (b.vy/spd)*maxSpd; }
+    const minSpd = 2.0;
+    if (spd < minSpd && spd > 0) { const f = minSpd/spd; b.vx *= f; b.vy *= f; }
+
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // Wall bounce
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
+    if (b.x + b.r > canvas.width) { b.x = canvas.width - b.r; b.vx = -Math.abs(b.vx); }
+    if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy); }
+    if (b.y + b.r > canvas.height) { b.y = canvas.height - b.r; b.vy = -Math.abs(b.vy); }
+
+    // Ball-ball collision (simple)
+    balls.forEach(b2 => {
+      if (b2 === b) return;
+      const dx = b2.x - b.x, dy = b2.y - b.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < b.r + b2.r && dist > 0) {
+        const nx = dx/dist, ny = dy/dist;
+        const overlap = (b.r + b2.r - dist) / 2;
+        b.x -= nx * overlap; b.y -= ny * overlap;
+        b2.x += nx * overlap; b2.y += ny * overlap;
+        const relV = (b.vx - b2.vx)*nx + (b.vy - b2.vy)*ny;
+        if (relV > 0) {
+          b.vx -= relV*nx; b.vy -= relV*ny;
+          b2.vx += relV*nx; b2.vy += relV*ny;
+        }
+      }
+    });
+
+    drawBallOnCanvas(b);
+  });
+
+  animId = requestAnimationFrame(animLoop);
+}
+
+function drawBallOnCanvas(b) {
+  ctx.save();
+  ctx.translate(b.x, b.y);
+
+  // Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 10;
+
+  // Ball gradient
+  const g = ctx.createRadialGradient(-b.r*0.3, -b.r*0.3, b.r*0.05, 0, 0, b.r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(1, '#c8c8d8');
+
+  ctx.beginPath();
+  ctx.arc(0, 0, b.r, 0, Math.PI*2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Number
+  ctx.fillStyle = '#111';
+  ctx.font = `bold ${b.r * 0.75}px Inter, system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(b.num, 0, 0);
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════════════
+const confettiCanvas = document.getElementById('confetti-canvas');
+const cctx = confettiCanvas.getContext('2d');
+let confettiParticles = [];
+let confettiId = null;
+
+function startConfetti(teamColor) {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+
+  const colors = [teamColor, '#f0b429', '#ffffff', '#a78bfa', '#60a5fa', '#34d399'];
+  confettiParticles = [];
+
+  for (let i = 0; i < 180; i++) {
+    confettiParticles.push({
+      x: Math.random() * confettiCanvas.width,
+      y: -20 - Math.random() * 200,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 2 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      w: 6 + Math.random() * 8,
+      h: 10 + Math.random() * 8,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.15,
+      alpha: 1,
+    });
+  }
+
+  confettiLoop();
+}
+
+function confettiLoop() {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  let alive = 0;
+  confettiParticles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05;
+    p.rot += p.rotV;
+    if (p.y > confettiCanvas.height) p.alpha -= 0.05;
+    if (p.alpha <= 0) return;
+    alive++;
+
+    cctx.save();
+    cctx.globalAlpha = Math.max(0, p.alpha);
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rot);
+    cctx.fillStyle = p.color;
+    cctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    cctx.restore();
+  });
+
+  if (alive > 0) {
+    confettiId = requestAnimationFrame(confettiLoop);
+  }
+}
+
+function stopConfetti() {
+  if (confettiId) { cancelAnimationFrame(confettiId); confettiId = null; }
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('Start over? This will clear all lottery data.')) hardReset();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+function init() {
+  const saved = loadState();
+  if (saved) {
+    state = saved;
+    // Restore comboMap (was plain object, stays plain object)
+    buildSetupRows(state.teams.length); // keep DOM consistent
+    document.getElementById('setup-screen').style.display = 'none';
+    showLotteryScreen();
+
+    // If in reveal phase, re-show the overlays appropriately
+    if (state.phase === 'final') {
+      showFinal();
+    } else if (state.phase === 'draw1' || state.phase === 'draw2') {
+      computeLiveOdds();
+      startBalls();
+    }
+  } else {
+    buildSetupRows(16);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
