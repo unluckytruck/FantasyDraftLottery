@@ -1192,7 +1192,8 @@ function computeComboCounts(N, nhlStyle = true) {
     const entries = NHL_COMBOS_16.slice(0, N - 1);
     const remainder = 1000 - entries.reduce((a, b) => a + b, 0);
     const result = [...entries, remainder];
-    console.assert(result.reduce((a,b)=>a+b,0) === 1000, 'NHL combo table must sum to 1000');
+    const sum = result.reduce((a,b)=>a+b,0);
+    if (sum !== 1000) throw new Error(`NHL combo table for N=${N} must sum to 1000, got ${sum}`);
     return result;
   } else {
     const weights = NHL_COMBOS_16.slice(0, N);
@@ -1200,7 +1201,8 @@ function computeComboCounts(N, nhlStyle = true) {
     const counts = weights.map(w => Math.round(w / sum * 1000));
     const diff = 1000 - counts.reduce((a, b) => a + b, 0);
     counts[counts.length - 1] += diff;
-    console.assert(counts.reduce((a,b)=>a+b,0) === 1000, 'Proportional combo table must sum to 1000');
+    const total = counts.reduce((a,b)=>a+b,0);
+    if (total !== 1000) throw new Error(`Proportional combo table for N=${N} must sum to 1000, got ${total}`);
     return counts;
   }
 }
@@ -1322,6 +1324,7 @@ document.getElementById('num-teams').addEventListener('input', function() {
   if (isNaN(raw) || raw < 11 || raw > 16) {
     errEl.style.display = 'block';
     const clamped = isNaN(raw) ? 11 : Math.max(11, Math.min(16, raw));
+    this.value = clamped;
     buildSetupRows(clamped);
   } else {
     errEl.style.display = 'none';
@@ -2251,27 +2254,30 @@ function renderComboPreview() {
   document.getElementById('combo-preview-grid').innerHTML =
     pageCombos.map(c => `<div class="combo-pill">${c.join('-')}</div>`).join('');
 
-  const pag = document.getElementById('combo-preview-pagination');
-  pag.innerHTML = `
-    <button id="cp-prev-btn" ${comboPreviewPage === 0 ? 'disabled' : ''}>← Prev</button>
+  document.getElementById('combo-preview-pagination').innerHTML = `
+    <button data-cp-action="prev" ${comboPreviewPage === 0 ? 'disabled' : ''}>← Prev</button>
     <span>Page ${comboPreviewPage + 1} of ${totalPages}</span>
-    <button id="cp-next-btn" ${comboPreviewPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+    <button data-cp-action="next" ${comboPreviewPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
   `;
-  document.getElementById('cp-prev-btn').addEventListener('click', () => {
-    if (comboPreviewPage > 0) {
-      comboPreviewPage--;
-      renderComboPreview();
-      document.getElementById('combo-preview-box').scrollTop = 0;
-    }
-  });
-  document.getElementById('cp-next-btn').addEventListener('click', () => {
-    if (comboPreviewPage < totalPages - 1) {
-      comboPreviewPage++;
-      renderComboPreview();
-      document.getElementById('combo-preview-box').scrollTop = 0;
-    }
-  });
 }
+
+// Pagination via event delegation on the fixed container — listeners set up once
+document.getElementById('combo-preview-pagination').addEventListener('click', function(e) {
+  const btn = e.target.closest('button[data-cp-action]');
+  if (!btn || btn.disabled || comboPreviewTeamId === null) return;
+  const team = state ? state.teams.find(t => t.id === comboPreviewTeamId) : null;
+  if (!team) return;
+  const totalPages = Math.max(1, Math.ceil(team.combos.length / COMBOS_PER_PAGE));
+  if (btn.dataset.cpAction === 'prev' && comboPreviewPage > 0) {
+    comboPreviewPage--;
+    renderComboPreview();
+    document.getElementById('combo-preview-box').scrollTop = 0;
+  } else if (btn.dataset.cpAction === 'next' && comboPreviewPage < totalPages - 1) {
+    comboPreviewPage++;
+    renderComboPreview();
+    document.getElementById('combo-preview-box').scrollTop = 0;
+  }
+});
 
 document.getElementById('combo-preview-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeComboPreview();
@@ -2321,7 +2327,8 @@ function generatePDF() {
   doc.setTextColor(40, 40, 60);
 
   const rawTitle = document.querySelector('.lottery-header h2').textContent;
-  const leagueName = rawTitle.replace(/[^\w\s\-'&]/g, '').trim() || 'Fantasy Draft Lottery';
+  // Strip emoji and non-printable chars while preserving standard punctuation
+  const leagueName = rawTitle.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '').replace(/\s+/g, ' ').trim() || 'Fantasy Draft Lottery';
 
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
@@ -2381,6 +2388,7 @@ function generatePDF() {
       doc.setTextColor(50, 50, 70);
     }
 
+    // delta > 0: team got a better pick than their standing (jumped up); delta < 0: dropped
     const delta = team.standingsRank - team.draftPick;
     const moveStr = delta > 0 ? `+${delta} (up)` : delta < 0 ? `${delta} (down)` : '\u2014';
     const badge = isW1 ? 'Lottery Winner \u2013 Draw 1' : isW2 ? 'Lottery Winner \u2013 Draw 2' : '';
