@@ -6,6 +6,7 @@
 <title>Sten och Stanley Cup 2026 Draft Lottery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -892,6 +893,146 @@
     color: var(--gold) !important;
     background: radial-gradient(circle at 35% 35%, #2a1a00, #1a0f00) !important;
   }
+
+  /* ── TEAM CARD EYE BUTTON ── */
+  .btn-eye-preview {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-size: 0.62rem;
+    padding: 1px 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.4;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+  .btn-eye-preview:hover {
+    border-color: #7c5cfc;
+    color: var(--text);
+  }
+
+  /* ── COMBO PREVIEW OVERLAY ── */
+  #combo-preview-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 120;
+  }
+  #combo-preview-overlay.open { display: flex; }
+
+  .combo-preview-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px 24px;
+    max-width: 660px;
+    width: 94%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 0 80px rgba(0,0,0,0.6);
+  }
+  .combo-preview-box::-webkit-scrollbar { width: 4px; }
+  .combo-preview-box::-webkit-scrollbar-track { background: transparent; }
+  .combo-preview-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .combo-preview-color-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .combo-preview-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.75rem;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .combo-preview-close:hover { border-color: var(--red); color: var(--red); }
+
+  .combo-preview-header {
+    margin-bottom: 16px;
+    padding-top: 8px;
+  }
+  .combo-preview-header h3 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .combo-preview-header p {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .combo-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .combo-pill {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px 2px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .combo-preview-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .combo-preview-pagination button {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .combo-preview-pagination button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .combo-preview-pagination button:hover:not(:disabled) {
+    border-color: #7c5cfc;
+  }
+
+  /* ── NUM-TEAMS VALIDATION ── */
+  .num-teams-error {
+    font-size: 0.78rem;
+    color: var(--red);
+    margin-top: -12px;
+    margin-bottom: 8px;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -906,9 +1047,10 @@
 
     <div class="form-row">
       <label for="num-teams">Number of teams</label>
-      <input type="number" id="num-teams" min="2" max="16" value="16">
+      <input type="number" id="num-teams" min="11" max="16" value="16">
       <span style="font-size:0.8rem;color:var(--text-dim)">teams in the draw</span>
     </div>
+    <p class="num-teams-error" id="num-teams-error">Please enter a number between 11 and 16.</p>
 
     <div class="toggle-row">
       <div>
@@ -917,6 +1059,17 @@
       </div>
       <label class="toggle">
         <input type="checkbox" id="jump-toggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <label for="nhl-odds-toggle">NHL-Style Odds</label>
+        <small>Top seed stays at 18.5% regardless of field size. Off = proportional scaling across all teams.</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="nhl-odds-toggle" checked>
         <span class="toggle-slider"></span>
       </label>
     </div>
@@ -1003,7 +1156,19 @@
     <div class="final-cards" id="final-cards"></div>
     <div class="final-actions">
       <button class="btn-primary" style="max-width:200px;" onclick="hardReset()">Start Over</button>
+      <button class="btn-primary" style="max-width:220px;" onclick="generatePDF()">📄 Download Report</button>
     </div>
+  </div>
+</div>
+
+<!-- Combo Preview Overlay -->
+<div id="combo-preview-overlay">
+  <div class="combo-preview-box" id="combo-preview-box">
+    <div class="combo-preview-color-bar" id="combo-preview-color-bar"></div>
+    <button class="combo-preview-close" id="combo-preview-close">✕ Close</button>
+    <div class="combo-preview-header" id="combo-preview-header"></div>
+    <div class="combo-preview-grid" id="combo-preview-grid"></div>
+    <div class="combo-preview-pagination" id="combo-preview-pagination"></div>
   </div>
 </div>
 
@@ -1018,14 +1183,28 @@ const STORAGE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 const NHL_COMBOS_16 = [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 5, 5];
 const NHL_WEIGHTS = [18.5, 13.5, 11.5, 9.5, 8.5, 7.5, 6.5, 6.0, 5.0, 3.5, 3.0, 2.5, 2.0, 1.5, 0.5, 0.5];
 
-function computeComboCounts(N) {
+// Compute combo counts for N teams (11–16).
+// nhlStyle=true: top N-1 entries from NHL_COMBOS_16, last entry absorbs remainder to 1000.
+// nhlStyle=false: proportional rescaling of first N entries of NHL_COMBOS_16 to 1000.
+function computeComboCounts(N, nhlStyle = true) {
   if (N === 16) return [...NHL_COMBOS_16];
-  const weights = NHL_WEIGHTS.slice(0, N);
-  const sum = weights.reduce((a,b) => a+b, 0);
-  const counts = weights.map(w => Math.round(w / sum * 1000));
-  const diff = 1000 - counts.reduce((a,b) => a+b, 0);
-  counts[counts.length - 1] += diff;
-  return counts;
+  if (nhlStyle) {
+    const entries = NHL_COMBOS_16.slice(0, N - 1);
+    const remainder = 1000 - entries.reduce((a, b) => a + b, 0);
+    const result = [...entries, remainder];
+    const sum = result.reduce((a,b)=>a+b,0);
+    if (sum !== 1000) throw new Error(`NHL combo table for N=${N} must sum to 1000, got ${sum}`);
+    return result;
+  } else {
+    const weights = NHL_COMBOS_16.slice(0, N);
+    const sum = weights.reduce((a, b) => a + b, 0);
+    const counts = weights.map(w => Math.round(w / sum * 1000));
+    const diff = 1000 - counts.reduce((a, b) => a + b, 0);
+    counts[counts.length - 1] += diff;
+    const total = counts.reduce((a,b)=>a+b,0);
+    if (total !== 1000) throw new Error(`Proportional combo table for N=${N} must sum to 1000, got ${total}`);
+    return counts;
+  }
 }
 
 const PALETTE = [
@@ -1052,6 +1231,7 @@ let ballAnimating = false;
 // {
 //   phase: 'setup'|'assign'|'draw1'|'reveal1'|'draw2'|'reveal2'|'final',
 //   jumpLimit: bool,
+//   nhlStyleOdds: bool,
 //   teams: [{id, name, color, standingsRank, draftPick, numCombos, baseOdds, currentOdds,
 //             eliminated, drawWinner (1|2|null), combos: [[a,b,c,d],...] }],
 //   comboMap: { "a-b-c-d": teamId },  // stored as plain object for JSON
@@ -1082,21 +1262,8 @@ function comboKey(arr) {
 
 function assignCombos(teams) {
   const N = teams.length;
-
-  // Use exact combo counts for 16 teams; otherwise scale weights proportionally
-  let counts;
-  let scaled;
-  if (N === 16) {
-    counts = [...NHL_COMBOS_16];
-    scaled = NHL_WEIGHTS.map(w => w / 100);
-  } else {
-    const rawWeights = NHL_WEIGHTS.slice(0, N);
-    const sum = rawWeights.reduce((a,b) => a+b, 0);
-    scaled = rawWeights.map(w => w / sum);
-    counts = scaled.map(w => Math.round(w * 1000));
-    const diff = 1000 - counts.reduce((a,b) => a+b, 0);
-    counts[counts.length - 1] += diff;
-  }
+  const nhlStyle = state ? state.nhlStyleOdds !== false : true;
+  const counts = computeComboCounts(N, nhlStyle);
 
   // Shuffle all 1000 combos and slice per team
   const allCombos = generateAllCombos();
@@ -1112,7 +1279,7 @@ function assignCombos(teams) {
     const n = counts[idx];
     team.combos = allCombos.slice(offset, offset + n);
     team.numCombos = n;
-    team.baseOdds = parseFloat((scaled[idx] * 100).toFixed(1));
+    team.baseOdds = parseFloat(((n / 1000) * 100).toFixed(1));
     team.currentOdds = team.baseOdds;
     team.combos.forEach(c => { comboMap[comboKey(c)] = team.id; });
     offset += n;
@@ -1152,13 +1319,30 @@ function buildSetupRows(n) {
 }
 
 document.getElementById('num-teams').addEventListener('input', function() {
-  const n = Math.max(2, Math.min(16, parseInt(this.value) || 2));
-  buildSetupRows(n);
+  const raw = parseInt(this.value);
+  const errEl = document.getElementById('num-teams-error');
+  if (isNaN(raw) || raw < 11 || raw > 16) {
+    errEl.style.display = 'block';
+    const clamped = isNaN(raw) ? 11 : Math.max(11, Math.min(16, raw));
+    this.value = clamped;
+    buildSetupRows(clamped);
+  } else {
+    errEl.style.display = 'none';
+    buildSetupRows(raw);
+  }
 });
 
 document.getElementById('lock-setup-btn').addEventListener('click', () => {
   const n = parseInt(document.getElementById('num-teams').value);
+  const errEl = document.getElementById('num-teams-error');
+  if (isNaN(n) || n < 11 || n > 16) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
   const jumpLimit = document.getElementById('jump-toggle').checked;
+  const nhlStyleOdds = document.getElementById('nhl-odds-toggle').checked;
   const rows = document.querySelectorAll('.team-row');
 
   const teams = [];
@@ -1184,7 +1368,7 @@ document.getElementById('lock-setup-btn').addEventListener('click', () => {
 
   // Pre-compute combo counts and build one shuffled pool for the whole lottery
   const N = teams.length;
-  const counts = computeComboCounts(N);
+  const counts = computeComboCounts(N, nhlStyleOdds);
   const comboPool = generateAllCombos();
   for (let i = comboPool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -1193,13 +1377,14 @@ document.getElementById('lock-setup-btn').addEventListener('click', () => {
   // Pre-assign numCombos and baseOdds so cards can display them immediately
   teams.forEach((team, idx) => {
     team.numCombos = counts[idx];
-    team.baseOdds = parseFloat((counts[idx] / 10).toFixed(1));
+    team.baseOdds = parseFloat(((counts[idx] / 1000) * 100).toFixed(1));
     team.currentOdds = team.baseOdds;
   });
 
   state = {
     phase: 'assign',
     jumpLimit,
+    nhlStyleOdds,
     teams,
     comboMap: {},
     comboPool,
@@ -1230,6 +1415,7 @@ function loadState() {
     const s = JSON.parse(raw);
     if (!s.comboPool) s.comboPool = [];
     if (s.comboOffset === undefined) s.comboOffset = 0;
+    if (s.nhlStyleOdds === undefined) s.nhlStyleOdds = true;
     if (!s.savedAt || Date.now() - s.savedAt > STORAGE_TTL) {
       localStorage.removeItem(STORAGE_KEY);
       return null;
@@ -1287,6 +1473,7 @@ function teamCardHTML(team) {
   const isAssigned = team.combos && team.combos.length > 0;
   const isElim = team.eliminated && phase !== 'final';
   const isClickable = phase === 'assign' && !isAssigned;
+  const showEye = isAssigned && phase !== 'final';
 
   let statusClass = '';
   let statusText = '';
@@ -1300,6 +1487,7 @@ function teamCardHTML(team) {
                       isAssigned ? `${team.baseOdds.toFixed(1)}%` : '–';
   const combosDisplay = isAssigned ? `${team.numCombos} combos` : '–';
   const pickLabel = `PICK ${team.draftPick}`;
+  const eyeBtn = showEye ? `<button class="btn-eye-preview" onclick="openComboPreview('${team.id}')">👁</button>` : '';
 
   return `<div class="team-card ${isElim ? 'eliminated' : ''} ${isClickable ? 'clickable' : ''}"
     id="card-${team.id}"
@@ -1314,7 +1502,10 @@ function teamCardHTML(team) {
       </div>
       <div class="tc-bottom">
         <span class="tc-combos" id="combos-${team.id}">${combosDisplay}</span>
-        <span class="tc-odds" id="odds-${team.id}">${oddsDisplay}</span>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span class="tc-odds" id="odds-${team.id}">${oddsDisplay}</span>
+          ${eyeBtn}
+        </div>
       </div>
     </div>
   </div>`;
@@ -2023,6 +2214,244 @@ function confettiLoop() {
 function stopConfetti() {
   if (confettiId) { cancelAnimationFrame(confettiId); confettiId = null; }
   cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMBO PREVIEW OVERLAY
+// ═══════════════════════════════════════════════════════════════
+let comboPreviewTeamId = null;
+let comboPreviewPage = 0;
+const COMBOS_PER_PAGE = 50;
+
+function openComboPreview(teamId) {
+  comboPreviewTeamId = teamId;
+  comboPreviewPage = 0;
+  renderComboPreview();
+  document.getElementById('combo-preview-overlay').classList.add('open');
+  document.getElementById('combo-preview-box').scrollTop = 0;
+}
+
+function closeComboPreview() {
+  document.getElementById('combo-preview-overlay').classList.remove('open');
+  comboPreviewTeamId = null;
+}
+
+function renderComboPreview() {
+  const team = state.teams.find(t => t.id === comboPreviewTeamId);
+  if (!team) return;
+
+  document.getElementById('combo-preview-color-bar').style.background = team.color;
+
+  document.getElementById('combo-preview-header').innerHTML = `
+    <h3 style="color:${team.color}">${team.name}</h3>
+    <p>Standing: #${team.standingsRank} &nbsp;&middot;&nbsp; ${team.numCombos} combinations &nbsp;&middot;&nbsp; Base odds: ${team.baseOdds.toFixed(1)}%</p>
+  `;
+
+  const totalPages = Math.max(1, Math.ceil(team.combos.length / COMBOS_PER_PAGE));
+  const start = comboPreviewPage * COMBOS_PER_PAGE;
+  const pageCombos = team.combos.slice(start, start + COMBOS_PER_PAGE);
+
+  document.getElementById('combo-preview-grid').innerHTML =
+    pageCombos.map(c => `<div class="combo-pill">${c.join('-')}</div>`).join('');
+
+  document.getElementById('combo-preview-pagination').innerHTML = `
+    <button data-cp-action="prev" ${comboPreviewPage === 0 ? 'disabled' : ''}>← Prev</button>
+    <span>Page ${comboPreviewPage + 1} of ${totalPages}</span>
+    <button data-cp-action="next" ${comboPreviewPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+  `;
+}
+
+// Pagination via event delegation on the fixed container — listeners set up once
+document.getElementById('combo-preview-pagination').addEventListener('click', function(e) {
+  const btn = e.target.closest('button[data-cp-action]');
+  if (!btn || btn.disabled || comboPreviewTeamId === null) return;
+  const team = state ? state.teams.find(t => t.id === comboPreviewTeamId) : null;
+  if (!team) return;
+  const totalPages = Math.max(1, Math.ceil(team.combos.length / COMBOS_PER_PAGE));
+  if (btn.dataset.cpAction === 'prev' && comboPreviewPage > 0) {
+    comboPreviewPage--;
+    renderComboPreview();
+    document.getElementById('combo-preview-box').scrollTop = 0;
+  } else if (btn.dataset.cpAction === 'next' && comboPreviewPage < totalPages - 1) {
+    comboPreviewPage++;
+    renderComboPreview();
+    document.getElementById('combo-preview-box').scrollTop = 0;
+  }
+});
+
+document.getElementById('combo-preview-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeComboPreview();
+});
+document.getElementById('combo-preview-close').addEventListener('click', closeComboPreview);
+
+// ═══════════════════════════════════════════════════════════════
+// PDF REPORT
+// ═══════════════════════════════════════════════════════════════
+function generatePDF() {
+  const jspdfLib = window.jspdf;
+  if (!jspdfLib) {
+    alert('PDF library not loaded. Please check your internet connection and try again.');
+    return;
+  }
+  const { jsPDF } = jspdfLib;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 50;
+  const usableW = pageW - margin * 2;
+  let y = margin;
+  let pageNum = 1;
+
+  function addFooter() {
+    const prevSize = doc.getFontSize();
+    doc.setFontSize(8);
+    doc.setTextColor(160, 160, 180);
+    doc.text(`Page ${pageNum}`, pageW / 2, pageH - 22, { align: 'center' });
+    doc.setFontSize(prevSize);
+    doc.setTextColor(40, 40, 60);
+  }
+
+  function maybeNewPage(needed) {
+    if (y + needed > pageH - 48) {
+      addFooter();
+      doc.addPage();
+      pageNum++;
+      y = margin;
+      return true;
+    }
+    return false;
+  }
+
+  // ── PAGE 1: RESULTS SUMMARY ──
+  doc.setTextColor(40, 40, 60);
+
+  const rawTitle = document.querySelector('.lottery-header h2').textContent;
+  // Strip emoji and non-printable chars while preserving standard punctuation
+  const leagueName = rawTitle.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '').replace(/\s+/g, ' ').trim() || 'Fantasy Draft Lottery';
+
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text(leagueName, margin, y);
+  y += 30;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(110, 110, 140);
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  doc.text(`Draft Lottery Results  \u00b7  ${dateStr}`, margin, y);
+  y += 20;
+
+  doc.setFontSize(9);
+  doc.text(
+    `Rules: Jump limit ${state.jumpLimit ? 'ON (max 10 spots)' : 'OFF'}  \u00b7  ` +
+    `Odds mode: ${state.nhlStyleOdds ? 'NHL-Style (worst team anchored at 18.5%)' : 'Proportional scaling'}`,
+    margin, y
+  );
+  y += 18;
+
+  doc.setDrawColor(190, 190, 210);
+  doc.line(margin, y, pageW - margin, y);
+  y += 14;
+
+  // Table header
+  const C1 = margin, C2 = margin + 46, C3 = margin + 290, C4 = margin + 370, C5 = margin + 440;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(130, 130, 160);
+  doc.text('PICK', C1, y);
+  doc.text('TEAM', C2, y);
+  doc.text('STANDING', C3, y);
+  doc.text('MOVEMENT', C4, y);
+  doc.text('NOTES', C5, y);
+  y += 10;
+  doc.setDrawColor(190, 190, 210);
+  doc.line(margin, y, pageW - margin, y);
+  y += 13;
+
+  const sorted = [...state.teams].sort((a, b) => a.draftPick - b.draftPick);
+  doc.setFontSize(10);
+
+  sorted.forEach(team => {
+    maybeNewPage(18);
+    const isW1 = team.id === state.draw1WinnerId;
+    const isW2 = team.id === state.draw2WinnerId;
+
+    if (isW1) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(175, 125, 15);
+    } else if (isW2) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(130, 140, 165);
+    } else {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 70);
+    }
+
+    // delta > 0: team got a better pick than their standing (jumped up); delta < 0: dropped
+    const delta = team.standingsRank - team.draftPick;
+    const moveStr = delta > 0 ? `+${delta} (up)` : delta < 0 ? `${delta} (down)` : '\u2014';
+    const badge = isW1 ? 'Lottery Winner \u2013 Draw 1' : isW2 ? 'Lottery Winner \u2013 Draw 2' : '';
+
+    doc.text(`${team.draftPick}`, C1, y);
+    doc.text(team.name, C2, y);
+    doc.text(`#${team.standingsRank}`, C3, y);
+    doc.text(moveStr, C4, y);
+    if (badge) doc.text(badge, C5, y);
+    y += 16;
+  });
+
+  addFooter();
+
+  // ── PAGES 2+: PER-TEAM COMBO LISTINGS ──
+  const teamsOrdered = [...state.teams].sort((a, b) => a.standingsRank - b.standingsRank);
+
+  teamsOrdered.forEach(team => {
+    doc.addPage();
+    pageNum++;
+    y = margin;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(40, 40, 60);
+    doc.text(team.name, margin, y);
+    y += 18;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(110, 110, 140);
+    doc.text(
+      `Standing: #${team.standingsRank}  \u00b7  Combinations: ${team.numCombos}  \u00b7  Base odds: ${team.baseOdds.toFixed(1)}%`,
+      margin, y
+    );
+    y += 10;
+
+    doc.setDrawColor(190, 190, 210);
+    doc.line(margin, y, pageW - margin, y);
+    y += 14;
+
+    const COLS = 6;
+    const cellW = usableW / COLS;
+    const rowH = 13;
+
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(50, 50, 70);
+
+    for (let i = 0; i < team.combos.length; i++) {
+      const col = i % COLS;
+      if (col === 0 && i > 0) {
+        y += rowH;
+        maybeNewPage(rowH + 5);
+      }
+      doc.text(`[${team.combos[i].join('-')}]`, margin + col * cellW, y);
+    }
+    y += rowH;
+
+    addFooter();
+  });
+
+  doc.save('draft-lottery-report.pdf');
 }
 
 // ═══════════════════════════════════════════════════════════════
