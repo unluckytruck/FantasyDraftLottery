@@ -1220,7 +1220,7 @@ const PALETTE = [
   { name: 'Pink',   hex: '#ec4899' },
 ];
 
-const DISCARDED_COMBO = '11-12-13-14';
+const DISCARDED_COMBO = '1-2-3-4';
 
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -1237,6 +1237,8 @@ let ballAnimating = false;
 //   comboMap: { "a-b-c-d": teamId },  // stored as plain object for JSON
 //   draw1WinnerId: null|id,
 //   draw2WinnerId: null|id,
+//   draw1WinningCombo: null|[a,b,c,d],
+//   draw2WinningCombo: null|[a,b,c,d],
 //   currentBalls: [],   // balls drawn so far this round
 //   savedAt: timestamp
 // }
@@ -1391,6 +1393,8 @@ document.getElementById('lock-setup-btn').addEventListener('click', () => {
     comboOffset: 0,
     draw1WinnerId: null,
     draw2WinnerId: null,
+    draw1WinningCombo: null,
+    draw2WinningCombo: null,
     currentBalls: [],
     savedAt: Date.now(),
   };
@@ -1918,9 +1922,11 @@ function triggerReveal(winnerTeamId, drawNum) {
 
   if (drawNum === 1) {
     state.draw1WinnerId = winnerTeamId;
+    state.draw1WinningCombo = [...state.currentBalls].sort((a, b) => a - b);
     state.phase = 'reveal1';
   } else {
     state.draw2WinnerId = winnerTeamId;
+    state.draw2WinningCombo = [...state.currentBalls].sort((a, b) => a - b);
     state.phase = 'reveal2';
   }
 
@@ -2400,6 +2406,34 @@ function generatePDF() {
     if (badge) doc.text(badge, C5, y);
     y += 16;
   });
+
+  const draw1Combo = Array.isArray(state.draw1WinningCombo) ? state.draw1WinningCombo : null;
+  const draw2Combo = Array.isArray(state.draw2WinningCombo) ? state.draw2WinningCombo : null;
+  if (draw1Combo || draw2Combo) {
+    maybeNewPage(46);
+    y += 4;
+    doc.setDrawColor(190, 190, 210);
+    doc.line(margin, y, pageW - margin, y);
+    y += 14;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(40, 40, 60);
+    doc.text('Winning Combinations', margin, y);
+    y += 14;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(50, 50, 70);
+    if (draw1Combo) {
+      doc.text(`Draw 1 (Pick 1):  ${draw1Combo.join(' · ')}`, margin, y);
+      y += 13;
+    }
+    if (draw2Combo) {
+      doc.text(`Draw 2 (Pick 2):  ${draw2Combo.join(' · ')}`, margin, y);
+      y += 13;
+    }
+  }
 
   addFooter();
 
